@@ -243,6 +243,9 @@ function createPeerConnection() {
 // Data channel management
 function sendData() {
   var data = sendTextarea.value;
+  receiveTextarea.value += 'You: ' + sendTextarea.value + '\n';
+  sendTextarea.value = '';
+  receiveTextarea.scrollTop = receiveTextarea.scrollHeight;
   if(isInitiator) sendChannel.send(data);
   else receiveChannel.send(data);
   trace('Sent data: ' + data);
@@ -260,7 +263,8 @@ function gotReceiveChannel(event) {
 
 function handleMessage(event) {
   trace('Received message: ' + event.data);
-  receiveTextarea.value += event.data + '\n';
+  receiveTextarea.value +='Not' + event.data + '\n';
+  receiveTextarea.scrollTop = receiveTextarea.scrollHeight;
 }
 
 function handleSendChannelStateChange() {

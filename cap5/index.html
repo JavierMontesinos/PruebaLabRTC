@@ -2,45 +2,114 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Bienvenido al grupo 00</title>
+<title>TelecoVideo</title>
+<style>
+	body {
+		font-family: Arial, sans-serif;
+		margin: 0;
+		padding: 0;
+		background-color: #f4f4f9;
+		color: #333;
+	}
+
+	#mainDiv {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		padding: 20px;
+	}
+
+	#mainDiv > div {
+		flex: 1;
+		margin: 10px;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		background-color: #fff;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		border-radius: 8px;
+		overflow: hidden;
+	}
+
+	th, td {
+		padding: 10px;
+		text-align: center;
+		border: 1px solid #ddd;
+	}
+
+	th {
+		background-color: #007BFF;
+		color: white;
+	}
+
+	video {
+		width: 100%;
+		border-radius: 8px;
+	}
+
+	textarea {
+		width: 90%;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		padding: 10px;
+		font-size: 14px;
+		resize: none;
+	}
+
+	button {
+		background-color: #007BFF;
+		color: white;
+		border: none;
+		padding: 10px 20px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 14px;
+	}
+
+	button:disabled {
+		background-color: #ccc;
+		cursor: not-allowed;
+	}
+
+	#chatContainer {
+		flex: 0.3;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		background-color: #fff;
+		padding: 20px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		border-radius: 8px;
+	}
+
+	#chatContainer textarea {
+		margin-bottom: 10px;
+	}
+</style>
 </head>
 <body>
 
 <div id='mainDiv'>
-
-	<table border="1" width="100%">
-		<tr>
-			<th>
-				Local video
-			</th>
-			<th>
-				'Remote' video
-			</th>
-		</tr>
-		<tr>
-			<td>
-				<video id="localVideo" muted autoplay></video>
-			</td>
-			<td>
-				<video id="remoteVideo" autoplay></video>
-			</td>
-		</tr>
-		<tr>
-			<td align="center">
-				<textarea rows="4" cols="60" id="dataChannelSend" disabled
+	<div id="chatContainer">
+		<textarea rows="4" cols="30" id="dataChannelSend" disabled
 			placeholder="This will be enabled once the data channel is up..."></textarea>
-			</td>
-			<td align="center">
-				<textarea rows="4" cols="60" id="dataChannelReceive" disabled></textarea>
-			</td>
-		</tr>
-		<tr>
-			<td align="center">
-				<button id="sendButton" disabled>Send</button>
-			</td>
-			<td></td>
-		</tr>
-	</table>
+		<textarea rows="4" cols="30" id="dataChannelReceive" disabled></textarea>
+		<button id="sendButton" disabled>Send</button>
+	</div>
+	<div>
+		<table>
+			<tr>
+				<th>Local video</th>
+				<th>'Remote' video</th>
+			</tr>
+			<tr>
+				<td><video id="localVideo" muted autoplay></video></td>
+				<td><video id="remoteVideo" autoplay></video></td>
+			</tr>
+		</table>
+	</div>
 </div>
 
 <script src='/socket.io/socket.io.js'></script>
