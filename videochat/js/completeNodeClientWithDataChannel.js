@@ -267,7 +267,7 @@ function gotReceiveChannel(event) {
 
 function handleMessage(event) {
   trace('Received message: ' + event.data);
-  receiveTextarea.value +='Not' + event.data + '\n';
+  receiveTextarea.value +='Remote: ' + event.data + '\n';
   receiveTextarea.scrollTop = receiveTextarea.scrollHeight;
 }
 
@@ -343,15 +343,24 @@ function setLocalAndSendMessage(sessionDescription) {
 // Remote stream handlers...
 
 function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
+  console.log('Remote stream added.'); 
   if (event.streams && event.streams[0]) {
-    remoteVideo.srcObject = event.streams[0];
-    remoteStream = event.streams[0];
-    console.log('Remote stream attached.');
-  } else {
-    console.error('No remote stream found in event.');
+    // Crear un nuevo elemento <video> para este flujo remoto
+    const remoteVideoElement = document.createElement('video');
+    remoteVideoElement.autoplay = true;
+    remoteVideoElement.playsInline = true;
+    remoteVideoElement.srcObject = event.streams[0];
+    remoteVideoElement.style.width = '200px'; // Ajusta el tamaño según sea necesario
+  
+    // Agregar el nuevo elemento <video> al contenedor
+    const remoteVideosContainer = document.getElementById('remoteVideosContainer');
+    remoteVideosContainer.appendChild(remoteVideoElement);
+  
+    console.log('Remote stream attached to new video element.');
+    } else {
+      console.error('No remote stream found in event.');
+    }
   }
-}
 
 function handleRemoteStreamRemoved(event) {
   console.log('Remote stream removed. Event: ', event);

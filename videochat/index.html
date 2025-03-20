@@ -27,10 +27,17 @@
 	table {
 		width: 100%;
 		border-collapse: collapse;
+		height: 80vh;
 		background-color: #fff;
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 		border-radius: 8px;
 		overflow: hidden;
+	}
+	#videoContainer {
+    	flex: 0.7;
+    	display: flex;
+    	flex-direction: column;
+    	align-items: center;
 	}
 
 	th, td {
@@ -74,15 +81,27 @@
 	}
 
 	#chatContainer {
-		flex: 0.3;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		background-color: #fff;
-		padding: 20px;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-		border-radius: 8px;
+		position: absolute;
+		bottom: 10px;
+    	left: 20px;
+    	width: 300px;
+    	background-color: rgba(255, 255, 255, 0.8);
+    	padding: 20px;
+    	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    	border-radius: 8px;
+		align-items: flex-start;
 	}
+
+	#dataChannelSend {
+    	align-self: flex-start;
+    	text-align: left;
+	}
+
+	#dataChannelReceive {
+		align-self: flex-start;
+		text-align: right;
+	}
+
 
 	#chatContainer textarea {
 		margin-bottom: 10px;
@@ -106,7 +125,7 @@
 			</tr>
 			<tr>
 				<td><video id="localVideo" muted autoplay></video></td>
-				<td><video id="remoteVideo" autoplay></video></td>
+				<td><div id="remoteVideosContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div></td>
 			</tr>
 		</table>
 	</div>
