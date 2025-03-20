@@ -24,6 +24,9 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 
+//Variable para peerConnection
+var peerConnections = {};
+
 // WebRTC data structures
 // Streams
 var localStream;
@@ -158,25 +161,38 @@ socket.on('log', function (array){
   console.log.apply(console, array);
 });
 
+
+//Actualizar servidor
+socket.on('message', (message) => {
+  const userId = socket.id; // Usa el ID del socket como identificador único
+  message.userId = userId;
+  socket.to(message.channel).emit('message', message);
+});
+
 // Receive message from the other peer via the signalling server
-socket.on('message', function (message){
+socket.on('message', function (message) {
   console.log('Received message:', message);
+
+  const userId = message.userId; // Asegúrate de que el servidor envíe un ID único para cada usuario
+
   if (message.message === 'got user media') {
-    checkAndStart();
+    checkAndStart(userId);
   } else if (message.message.type === 'offer') {
-    if (!isInitiator && !isStarted) {
-      checkAndStart();
+    if (!peerConnections[userId]) {
+      createPeerConnection(userId);
     }
-    pc.setRemoteDescription(new RTCSessionDescription(message.message));
-    doAnswer();
-  } else if (message.message.type === 'answer' && isStarted) {
-    pc.setRemoteDescription(new RTCSessionDescription(message.message));
-  } else if (message.message.type === 'candidate' && isStarted) {
-    var candidate = new RTCIceCandidate({sdpMLineIndex:message.message.label,
-      candidate:message.message.candidate});
-    pc.addIceCandidate(candidate);
-  } else if (message.message === 'bye' && isStarted) {
-    handleRemoteHangup();
+    peerConnections[userId].setRemoteDescription(new RTCSessionDescription(message.message));
+    doAnswer(userId);
+  } else if (message.message.type === 'answer') {
+    peerConnections[userId].setRemoteDescription(new RTCSessionDescription(message.message));
+  } else if (message.message.type === 'candidate') {
+    const candidate = new RTCIceCandidate({
+      sdpMLineIndex: message.message.label,
+      candidate: message.message.candidate
+    });
+    peerConnections[userId].addIceCandidate(candidate);
+  } else if (message.message === 'bye') {
+    handleRemoteHangup(userId);
   }
 });
 ////////////////////////////////////////////////
@@ -204,43 +220,40 @@ function checkAndStart() {
 
 /////////////////////////////////////////////////////////
 // Peer Connection management...
-function createPeerConnection() {
+function createPeerConnection(userId) {
   try {
-    pc = new RTCPeerConnection(pc_config, pc_constraints);
+    const pc = new RTCPeerConnection(pc_config, pc_constraints);
 
-    console.log("Adding tracks from localStream to RTCPeerConnection.");
+    console.log("Adding tracks from localStream to RTCPeerConnection for user:", userId);
     if (localStream) {
       localStream.getTracks().forEach(track => {
         pc.addTrack(track, localStream);
       });
     }
 
-    pc.onicecandidate = handleIceCandidate;
-    console.log('Created RTCPeerConnection with:\n' +
-      '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
-      '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
-  } catch (e) {
-    console.error('Failed to create PeerConnection, exception:', e); // Log full error
-    alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
-    return;
-  }
+    pc.onicecandidate = (event) => handleIceCandidate(event, userId);
+    pc.ontrack = handleRemoteStreamAdded;
+    pc.onremovestream = handleRemoteStreamRemoved;
 
-  pc.ontrack = handleRemoteStreamAdded;
-  pc.onremovestream = handleRemoteStreamRemoved;
-
-  if (isInitiator) {
-    try {
-      sendChannel = pc.createDataChannel("sendDataChannel", { reliable: true });
-      trace('Created send data channel');
-    } catch (e) {
-      console.error('Failed to create data channel:', e); // Log full error
-      alert('Failed to create data channel. Error: ' + e.message);
+    if (isInitiator) {
+      try {
+        const sendChannel = pc.createDataChannel("sendDataChannel", { reliable: true });
+        sendChannel.onopen = handleSendChannelStateChange;
+        sendChannel.onmessage = handleMessage;
+        sendChannel.onclose = handleSendChannelStateChange;
+      } catch (e) {
+        console.error('Failed to create data channel:', e);
+      }
+    } else {
+      pc.ondatachannel = gotReceiveChannel;
     }
-    sendChannel.onopen = handleSendChannelStateChange;
-    sendChannel.onmessage = handleMessage;
-    sendChannel.onclose = handleSendChannelStateChange;
-  } else {
-    pc.ondatachannel = gotReceiveChannel;
+
+    peerConnections[userId] = pc; // Almacena la conexión en el mapa
+    return pc;
+  } catch (e) {
+    console.error('Failed to create PeerConnection, exception:', e);
+    alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
+    return null;
   }
 }
 
@@ -332,41 +345,49 @@ function handleReceiveChannelStateChange() {
 }
 
 // ICE candidates management
-function handleIceCandidate(event) {
-  console.log('handleIceCandidate event: ', event);
+function handleIceCandidate(event, userId) {
+  console.log('handleIceCandidate event:', event);
   if (event.candidate) {
     sendMessage({
+      userId: userId, // Incluye el ID del usuario
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate});
+      candidate: event.candidate.candidate
+    });
   } else {
     console.log('End of candidates.');
   }
 }
 
 // Create Offer
-function doCall() {
-  console.log('Creating Offer...');
-  pc.createOffer(setLocalAndSendMessage, onSignalingError, sdpConstraints);
+function doCall(userId) {
+  console.log('Creating Offer for user:', userId);
+  peerConnections[userId].createOffer().then((offer) => {
+    setLocalAndSendMessage(offer, userId);
+  }).catch(onSignalingError);
 }
-
 // Signalling error handler
 function onSignalingError(error) {
 	console.log('Failed to create signaling message : ' + error.name);
 }
 
 // Create Answer
-function doAnswer() {
-  console.log('Sending answer to peer.');
-  pc.createAnswer(setLocalAndSendMessage, onSignalingError, sdpConstraints);
+function doAnswer(userId) {
+  console.log('Sending answer to user:', userId);
+  peerConnections[userId].createAnswer().then((answer) => {
+    setLocalAndSendMessage(answer, userId);
+  }).catch(onSignalingError);
 }
 
 // Success handler for both createOffer()
 // and createAnswer()
-function setLocalAndSendMessage(sessionDescription) {
-  pc.setLocalDescription(sessionDescription);
-  sendMessage(sessionDescription);
+function setLocalAndSendMessage(sessionDescription, userId) {
+  peerConnections[userId].setLocalDescription(sessionDescription);
+  sendMessage({
+    userId: userId, // Incluye el ID del usuario
+    ...sessionDescription
+  });
 }
 
 /////////////////////////////////////////////////////////
