@@ -343,24 +343,35 @@ function setLocalAndSendMessage(sessionDescription) {
 // Remote stream handlers...
 
 function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.'); 
+  console.log('Remote stream added.');
+
   if (event.streams && event.streams[0]) {
+    const remoteStreamId = event.streams[0].id; // Identificar el flujo remoto por su ID
+    const remoteVideosContainer = document.getElementById('remoteVideosContainer');
+
+    // Verificar si ya existe un video para este flujo remoto
+    const existingVideo = document.querySelector(`video[data-stream-id="${remoteStreamId}"]`);
+    if (existingVideo) {
+      console.log('Remote stream already added, skipping.');
+      return; // Salir si el flujo ya está agregado
+    }
+
     // Crear un nuevo elemento <video> para este flujo remoto
     const remoteVideoElement = document.createElement('video');
     remoteVideoElement.autoplay = true;
     remoteVideoElement.playsInline = true;
     remoteVideoElement.srcObject = event.streams[0];
     remoteVideoElement.style.width = '200px'; // Ajusta el tamaño según sea necesario
-  
+    remoteVideoElement.setAttribute('data-stream-id', remoteStreamId); // Asignar un atributo único para identificar el flujo
+
     // Agregar el nuevo elemento <video> al contenedor
-    const remoteVideosContainer = document.getElementById('remoteVideosContainer');
     remoteVideosContainer.appendChild(remoteVideoElement);
-  
+
     console.log('Remote stream attached to new video element.');
-    } else {
-      console.error('No remote stream found in event.');
-    }
+  } else {
+    console.error('No remote stream found in event.');
   }
+}
 
 function handleRemoteStreamRemoved(event) {
   console.log('Remote stream removed. Event: ', event);
