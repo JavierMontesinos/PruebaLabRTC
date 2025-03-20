@@ -273,14 +273,19 @@ function handleMessage(event) {
 
 function handleSendChannelStateChange() {
   var readyState = sendChannel.readyState;
-  trace('Send channel state is: ' + readyState);
-  // If channel ready, enable user's input
-  if (readyState == "open") {
+  console.log('Send channel state is: ' + readyState);
+  if (readyState === "open") {
+    console.log('Enabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
     dataChannelSend.disabled = false;
     dataChannelSend.focus();
-    dataChannelSend.placeholder = "";
+    dataChannelSend.placeholder = "Type your message here...";
     sendButton.disabled = false;
   } else {
+    console.log('Disabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
     dataChannelSend.disabled = true;
     sendButton.disabled = true;
   }
@@ -288,17 +293,42 @@ function handleSendChannelStateChange() {
 
 function handleReceiveChannelStateChange() {
   var readyState = receiveChannel.readyState;
-  trace('Receive channel state is: ' + readyState);
-  // If channel ready, enable user's input
-  if (readyState == "open") {
-	    dataChannelSend.disabled = false;
-	    dataChannelSend.focus();
-	    dataChannelSend.placeholder = "";
-	    sendButton.disabled = false;
-	  } else {
-	    dataChannelSend.disabled = true;
-	    sendButton.disabled = true;
-	  }
+  console.log('Receive channel state is: ' + readyState);
+  if (readyState === "open") {
+    console.log('Enabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
+    dataChannelSend.disabled = false;
+    dataChannelSend.focus();
+    dataChannelSend.placeholder = "Type your message here...";
+    sendButton.disabled = false;
+  } else {
+    console.log('Disabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
+    dataChannelSend.disabled = true;
+    sendButton.disabled = true;
+  }
+}
+
+function handleReceiveChannelStateChange() {
+  var readyState = receiveChannel.readyState;
+  console.log('Receive channel state is: ' + readyState);
+  if (readyState === "open") {
+    console.log('Enabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
+    dataChannelSend.disabled = false;
+    dataChannelSend.focus();
+    dataChannelSend.placeholder = "Type your message here...";
+    sendButton.disabled = false;
+  } else {
+    console.log('Disabling dataChannelSend');
+    const dataChannelSend = document.getElementById('dataChannelSend');
+    const sendButton = document.getElementById('sendButton');
+    dataChannelSend.disabled = true;
+    sendButton.disabled = true;
+  }
 }
 
 // ICE candidates management
@@ -361,7 +391,7 @@ function handleRemoteStreamAdded(event) {
     remoteVideoElement.autoplay = true;
     remoteVideoElement.playsInline = true;
     remoteVideoElement.srcObject = event.streams[0];
-    remoteVideoElement.style.width = '200px'; // Ajusta el tamaño según sea necesario
+    //remoteVideoElement.style.width = '200px'; // Ajusta el tamaño según sea necesario
     remoteVideoElement.setAttribute('data-stream-id', remoteStreamId); // Asignar un atributo único para identificar el flujo
 
     // Agregar el nuevo elemento <video> al contenedor
