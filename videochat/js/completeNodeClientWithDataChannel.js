@@ -345,38 +345,40 @@ function setLocalAndSendMessage(sessionDescription) {
 // Remote stream handlers...
 
 // Cambiar la referencia de remoteVideo a remoteVideosContainer
-document.addEventListener('DOMContentLoaded', () => {
-  var remoteVideosContainer = document.querySelector('#remoteVideosContainer');
+var remoteVideosContainer;
 
-  // Actualizar la función handleRemoteStreamAdded para agregar videos dinámicamente
-  function handleRemoteStreamAdded(event) {
-    console.log('Remote stream added.');
-    if (event.streams && event.streams[0]) {
-      // Crear un nuevo elemento <video> para el flujo remoto
-      const remoteVideo = document.createElement('video');
-      remoteVideo.autoplay = true;
-      remoteVideo.srcObject = event.streams[0];
-      remoteVideo.style.width = '500px'; // Ajustar el tamaño del video
-      remoteVideo.style.borderRadius = '8px'; // Estilo adicional
-      remoteVideo.style.objectFit = 'cover'; // Asegurar proporción
+// Definir la función handleRemoteStreamAdded globalmente
+function handleRemoteStreamAdded(event) {
+  console.log('Remote stream added.');
+  if (event.streams && event.streams[0]) {
+    // Crear un nuevo elemento <video> para el flujo remoto
+    const remoteVideo = document.createElement('video');
+    remoteVideo.autoplay = true;
+    remoteVideo.srcObject = event.streams[0];
+    remoteVideo.style.width = '500px'; // Ajustar el tamaño del video
+    remoteVideo.style.borderRadius = '8px'; // Estilo adicional
+    remoteVideo.style.objectFit = 'cover'; // Asegurar proporción
 
-      // Agregar el video al contenedor
-      if (remoteVideosContainer) {
-        remoteVideosContainer.appendChild(remoteVideo);
-        console.log('Remote video added to container.');
-      } else {
-        console.error('remoteVideosContainer not found in the DOM.');
-      }
-
-      remoteStream = event.streams[0];
-      console.log('Remote stream attached.');
+    // Agregar el video al contenedor
+    if (remoteVideosContainer) {
+      remoteVideosContainer.appendChild(remoteVideo);
+      console.log('Remote video added to container.');
     } else {
-      console.error('No remote stream found in event.');
-    }
-    console.log('remoteVideosContainer:', remoteVideosContainer);
-    if (!remoteVideosContainer) {
       console.error('remoteVideosContainer not found in the DOM.');
     }
+
+    remoteStream = event.streams[0];
+    console.log('Remote stream attached.');
+  } else {
+    console.error('No remote stream found in event.');
+  }
+}
+
+// Mover la inicialización del contenedor al evento DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  remoteVideosContainer = document.querySelector('#remoteVideosContainer');
+  if (!remoteVideosContainer) {
+    console.error('remoteVideosContainer not found in the DOM.');
   }
 });
 
