@@ -56,7 +56,10 @@ var pc_config = webrtcDetectedBrowser === 'firefox' ?
 }; */
 
 var pc_config = {
-	'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
+  'iceServers': [
+    { 'urls': 'stun:stun.l.google.com:19302' },
+    { 'urls': 'turn:your-turn-server.com', 'username': 'user', 'credential': 'pass' }
+  ]
 };
 
 var pc_constraints = {
@@ -206,17 +209,20 @@ function createPeerConnection() {
   try {
     pc = new RTCPeerConnection(pc_config, pc_constraints);
 
-    console.log("Calling pc.addStream(localStream)! Initiator: " + isInitiator);
-    pc.addStream(localStream);
-
+    console.log("Adding tracks from localStream to RTCPeerConnection.");
+     if (localStream) {
+       localStream.getTracks().forEach(track => {
+         pc.addTrack(track, localStream);
+       });
+     }
     pc.onicecandidate = handleIceCandidate;
-    console.log('Created RTCPeerConnnection with:\n' +
+    console.log('Created RTCPeerConnection with:\n' +
       '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
       '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
   } catch (e) {
-    console.log('Failed to create PeerConnection, exception: ' + e.message);
-    alert('Cannot create RTCPeerConnection object.');
-      return;
+    console.error('Failed to create PeerConnection, exception:', e); // Log full error
+     alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
+     return;
   }
 
   pc.ontrack = handleRemoteStreamAdded;
@@ -225,12 +231,11 @@ function createPeerConnection() {
   if (isInitiator) {
     try {
       // Create a reliable data channel
-      sendChannel = pc.createDataChannel("sendDataChannel",
-        {reliable: true});
+      sendChannel = pc.createDataChannel("sendDataChannel", { reliable: true });
       trace('Created send data channel');
     } catch (e) {
-      alert('Failed to create data channel. ');
-      trace('createDataChannel() failed with exception: ' + e.message);
+      console.error('Failed to create data channel:', e); // Log full error
+      alert('Failed to create data channel. Error: ' + e.message);
     }
     sendChannel.onopen = handleSendChannelStateChange;
     sendChannel.onmessage = handleMessage;
@@ -340,10 +345,13 @@ function setLocalAndSendMessage(sessionDescription) {
 
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
-  //attachMediaStream(remoteVideo, event.streams[0]);
-  remoteVideo.srcObject = event.streams[0];
-  console.log('Remote stream attached!!.');
-  remoteStream = event.stream;
+  if (event.streams && event.streams[0]) {
+    remoteVideo.srcObject = event.streams[0];
+    remoteStream = event.streams[0];
+    console.log('Remote stream attached.');
+  } else {
+    console.error('No remote stream found in event.');
+  }
 }
 
 function handleRemoteStreamRemoved(event) {
