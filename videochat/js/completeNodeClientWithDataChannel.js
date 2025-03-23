@@ -205,6 +205,7 @@ function checkAndStart() {
 
 /////////////////////////////////////////////////////////
 // Peer Connection management...
+// Crear la conexión de pares
 function createPeerConnection() {
   try {
     pc = new RTCPeerConnection(pc_config, pc_constraints);

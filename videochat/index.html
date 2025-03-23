@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>TelecoVideo</title>
+<title> Teleco Video</title>
 <style>
 	body {
 		font-family: Arial, sans-serif;
@@ -25,20 +25,19 @@
 	}
 
 	table {
-		width: 100%;
+		width: auto;
+		margin: 0 auto;
 		border-collapse: collapse;
-		height: 80vh;
 		background-color: #fff;
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 		border-radius: 8px;
 		overflow: hidden;
 	}
-	#videoContainer {
-    	flex: 0.7;
-    	display: flex;
-    	flex-direction: column;
-    	align-items: center;
-	}
+	video {
+    width: 500px; /* Tamaño uniforme para todos los videos */
+    border-radius: 8px;
+    object-fit: cover; /* Asegura que el video se ajuste al tamaño */
+}
 
 	th, td {
 		padding: 10px;
@@ -52,8 +51,9 @@
 	}
 
 	video {
-		width: 100%;
+		width: 500px;
 		border-radius: 8px;
+		object-fit: cover;
 	}
 
 	textarea {
@@ -132,27 +132,44 @@
 	}
 </style>
 </head>
+
 <body>
 
 <div id='mainDiv'>
-	<div id="chatContainer">
-		<textarea rows="4" cols="30" id="dataChannelSend" disabled
+
+	<table border="1" width="100%">
+		<tr>
+			<th>
+				Local video
+			</th>
+			<th>
+				Remote video
+			</th>
+		</tr>
+		<tr>
+			<td>
+				<video id="localVideo" muted autoplay></video>
+			</td>
+			<td>
+				<video id="remoteVideo" autoplay></video>
+			</td>
+		</tr>
+		<tr>
+			<td align="center">
+				<textarea rows="4" cols="60" id="dataChannelSend" disabled
 			placeholder="This will be enabled once the data channel is up..."></textarea>
-		<textarea rows="4" cols="30" id="dataChannelReceive" disabled></textarea>
-		<button id="sendButton" disabled>Send</button>
-	</div>
-	<div>
-		<table>
-			<tr>
-				<th>Local video</th>
-				<th>'Remote' video</th>
-			</tr>
-			<tr>
-				<td><video id="localVideo" muted autoplay></video></td>
-				<td><div id="remoteVideosContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div></td>
-			</tr>
-		</table>
-	</div>
+			</td>
+			<td align="center">
+				<textarea rows="4" cols="60" id="dataChannelReceive" disabled></textarea>
+			</td>
+		</tr>
+		<tr>
+			<td align="center">
+				<button id="sendButton" disabled>Send</button>
+			</td>
+			<td></td>
+		</tr>
+	</table>
 </div>
 
 <script src='/socket.io/socket.io.js'></script>
