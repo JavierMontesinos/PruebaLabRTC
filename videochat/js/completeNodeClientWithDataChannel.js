@@ -360,7 +360,12 @@ function handleRemoteStreamAdded(event) {
     remoteVideo.style.objectFit = 'cover'; // Asegurar proporción
 
     // Agregar el video al contenedor
-    remoteVideosContainer.appendChild(remoteVideo);
+    if (remoteVideosContainer) {
+      remoteVideosContainer.appendChild(remoteVideo);
+      console.log('Remote video added to container.');
+    } else {
+      console.error('remoteVideosContainer not found in the DOM.');
+    }
 
     remoteStream = event.streams[0];
     console.log('Remote stream attached.');
