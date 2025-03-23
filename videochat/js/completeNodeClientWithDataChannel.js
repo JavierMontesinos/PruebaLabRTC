@@ -339,7 +339,7 @@ function handleIceCandidate(event, userId) {
   console.log('handleIceCandidate event:', event);
   if (event.candidate) {
     sendMessage({
-      userId: userId, // Incluye el ID del usuario
+      userId: userId,
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
@@ -387,14 +387,14 @@ function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
 
   if (event.streams && event.streams[0]) {
-    const remoteStreamId = event.streams[0].id; // Identificar el flujo remoto por su ID
+    const remoteStreamId = event.streams[0].id;
     const remoteVideosContainer = document.getElementById('remoteVideosContainer');
 
     // Verificar si ya existe un video para este flujo remoto
     const existingVideo = document.querySelector(`video[data-stream-id="${remoteStreamId}"]`);
     if (existingVideo) {
       console.log('Remote stream already added, skipping.');
-      return; // Salir si el flujo ya está agregado
+      return;
     }
 
     // Crear un nuevo elemento <video> para este flujo remoto
@@ -402,8 +402,7 @@ function handleRemoteStreamAdded(event) {
     remoteVideoElement.autoplay = true;
     remoteVideoElement.playsInline = true;
     remoteVideoElement.srcObject = event.streams[0];
-    //remoteVideoElement.style.width = '200px'; // Ajusta el tamaño según sea necesario
-    remoteVideoElement.setAttribute('data-stream-id', remoteStreamId); // Asignar un atributo único para identificar el flujo
+    remoteVideoElement.setAttribute('data-stream-id', remoteStreamId);
 
     // Agregar el nuevo elemento <video> al contenedor
     remoteVideosContainer.appendChild(remoteVideoElement);
