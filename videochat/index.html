@@ -90,6 +90,7 @@
     	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     	border-radius: 8px;
 		align-items: flex-start;
+		z-index: 10;
 	}
 
 	#dataChannelSend {
@@ -102,6 +103,29 @@
 		text-align: right;
 	}
 
+/* Ajustar el tamaño de los videos */
+#remoteVideosContainer video,
+    #localVideo {
+        width: 200px; /* Tamaño uniforme para todos los videos */
+        height: 150px; /* Ajusta la altura para mantener proporción */
+        border-radius: 8px;
+        object-fit: cover; /* Asegura que el video se ajuste al tamaño */
+    }
+
+    /* Contenedor de videos remotos */
+    #remoteVideosContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Asegurar que la tabla no ocupe más espacio del necesario */
+    table {
+        width: auto; /* Ajusta el ancho automáticamente */
+        margin: 0 auto; /* Centra la tabla */
+    }	
 
 	#chatContainer textarea {
 		margin-bottom: 10px;

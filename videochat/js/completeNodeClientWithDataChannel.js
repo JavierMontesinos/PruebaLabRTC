@@ -121,7 +121,7 @@ function handleUserMediaError(error){
 // Handle 'created' message coming back from server:
 // this peer is the initiator
 socket.on('created', function (room){
-  console.log('Created room ' + room);
+  console.log(`Created room ${room}`);
   isInitiator = true;
 
   // Call getUserMedia()
@@ -147,13 +147,14 @@ socket.on('join', function (room){
 
 // Handle 'joined' message coming back from server:
 // this is the second peer joining the channel
-socket.on('joined', function (room){
-  console.log('This peer has joined room ' + room);
+socket.on('joined', (room) => {
+  console.log(`Joined room ${room}`);
   isChannelReady = true;
+});
 
-  // Call getUserMedia()
-  navigator.mediaDevices.getUserMedia(constraints).then(handleUserMedia).catch(handleUserMediaError);
-  console.log('Getting user media with constraints', constraints);
+socket.on('join', (room) => {
+  console.log(`Another peer joined room ${room}`);
+  isChannelReady = true;
 });
 
 // Server-sent log message...
