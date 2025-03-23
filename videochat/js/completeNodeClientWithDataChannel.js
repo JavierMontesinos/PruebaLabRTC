@@ -210,38 +210,39 @@ function createPeerConnection() {
     pc = new RTCPeerConnection(pc_config, pc_constraints);
 
     console.log("Adding tracks from localStream to RTCPeerConnection.");
-     if (localStream) {
-       localStream.getTracks().forEach(track => {
-         pc.addTrack(track, localStream);
-         console.log('Local stream tracks:', localStream.getTracks());
-       });
-     }
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+        console.log('Local stream tracks:', localStream.getTracks());
+      });
+    }
+
     pc.onicecandidate = handleIceCandidate;
+    pc.ontrack = handleRemoteStreamAdded; // Asignar la función correctamente
+    pc.onremovestream = handleRemoteStreamRemoved;
+
     console.log('Created RTCPeerConnection with:\n' +
       '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
       '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
   } catch (e) {
-    console.error('Failed to create PeerConnection, exception:', e); // Log full error
-     alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
-     return;
+    console.error('Failed to create PeerConnection, exception:', e);
+    alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
+    return;
   }
-
-  pc.ontrack = handleRemoteStreamAdded;
-  pc.onremovestream = handleRemoteStreamRemoved;
 
   if (isInitiator) {
     try {
-      // Create a reliable data channel
+      // Crear un canal de datos confiable
       sendChannel = pc.createDataChannel("sendDataChannel", { reliable: true });
-      trace('Created send data channel');
+      console.log('Created send data channel');
     } catch (e) {
-      console.error('Failed to create data channel:', e); // Log full error
+      console.error('Failed to create data channel:', e);
       alert('Failed to create data channel. Error: ' + e.message);
     }
     sendChannel.onopen = handleSendChannelStateChange;
     sendChannel.onmessage = handleMessage;
     sendChannel.onclose = handleSendChannelStateChange;
-  } else { // Joiner
+  } else {
     pc.ondatachannel = gotReceiveChannel;
   }
 }
