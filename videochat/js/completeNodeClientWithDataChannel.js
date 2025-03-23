@@ -24,9 +24,6 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 
-//Variable para peerConnection
-var peerConnections = {};
-
 // WebRTC data structures
 // Streams
 var localStream;
@@ -59,11 +56,9 @@ var pc_config = webrtcDetectedBrowser === 'firefox' ?
 }; */
 
 var pc_config = {
-  'iceServers': [
-    { 'urls': 'stun:stun.l.google.com:19302' },
-    { 'urls': 'turn:your-turn-server.com', 'username': 'user', 'credential': 'pass' }
-  ]
+	'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]
 };
+
 var pc_constraints = {
   'optional': [ {'DtlsSrtpKeyAgreement': true} ]
 };
@@ -120,30 +115,40 @@ function handleUserMediaError(error){
 
 // Handle 'created' message coming back from server:
 // this peer is the initiator
-socket.on('created', (room) => {
-  console.log(`Created room ${room}`);
+socket.on('created', function (room){
+  console.log('Created room ' + room);
   isInitiator = true;
+
+  // Call getUserMedia()
+  navigator.mediaDevices.getUserMedia(constraints).then(handleUserMedia).catch(handleUserMediaError);
+  console.log('Getting user media with constraints', constraints);
+
+  checkAndStart();
 });
 
 // Handle 'full' message coming back from server:
 // this peer arrived too late :-(
-socket.on('full', (room) => {
-  console.log(`Room ${room} is full`);
-  alert('The room is full. Please try another room.');
+socket.on('full', function (room){
+  console.log('Room ' + room + ' is full');
 });
 
 // Handle 'join' message coming back from server:
 // another peer is joining the channel
-socket.on('join', (room) => {
-  console.log(`Another peer joined room ${room}`);
+socket.on('join', function (room){
+  console.log('Another peer made a request to join room ' + room);
+  console.log('This peer is the initiator of room ' + room + '!');
   isChannelReady = true;
 });
 
 // Handle 'joined' message coming back from server:
 // this is the second peer joining the channel
-socket.on('joined', (room) => {
-  console.log(`Joined room ${room}`);
+socket.on('joined', function (room){
+  console.log('This peer has joined room ' + room);
   isChannelReady = true;
+
+  // Call getUserMedia()
+  navigator.mediaDevices.getUserMedia(constraints).then(handleUserMedia).catch(handleUserMediaError);
+  console.log('Getting user media with constraints', constraints);
 });
 
 // Server-sent log message...
@@ -151,38 +156,25 @@ socket.on('log', function (array){
   console.log.apply(console, array);
 });
 
-
-//Actualizar servidor
-socket.on('message', (message) => {
-  const userId = socket.id; // Usa el ID del socket como identificador único
-  message.userId = userId;
-  socket.to(message.channel).emit('message', message);
-});
-
 // Receive message from the other peer via the signalling server
-socket.on('message', function (message) {
+socket.on('message', function (message){
   console.log('Received message:', message);
-
-  const userId = message.userId; // Asegúrate de que el servidor envíe un ID único para cada usuario
-
   if (message.message === 'got user media') {
-    checkAndStart(userId);
+    checkAndStart();
   } else if (message.message.type === 'offer') {
-    if (!peerConnections[userId]) {
-      createPeerConnection(userId);
+    if (!isInitiator && !isStarted) {
+      checkAndStart();
     }
-    peerConnections[userId].setRemoteDescription(new RTCSessionDescription(message.message));
-    doAnswer(userId);
-  } else if (message.message.type === 'answer') {
-    peerConnections[userId].setRemoteDescription(new RTCSessionDescription(message.message));
-  } else if (message.message.type === 'candidate') {
-    const candidate = new RTCIceCandidate({
-      sdpMLineIndex: message.message.label,
-      candidate: message.message.candidate
-    });
-    peerConnections[userId].addIceCandidate(candidate);
-  } else if (message.message === 'bye') {
-    handleRemoteHangup(userId);
+    pc.setRemoteDescription(new RTCSessionDescription(message.message));
+    doAnswer();
+  } else if (message.message.type === 'answer' && isStarted) {
+    pc.setRemoteDescription(new RTCSessionDescription(message.message));
+  } else if (message.message.type === 'candidate' && isStarted) {
+    var candidate = new RTCIceCandidate({sdpMLineIndex:message.message.label,
+      candidate:message.message.candidate});
+    pc.addIceCandidate(candidate);
+  } else if (message.message === 'bye' && isStarted) {
+    handleRemoteHangup();
   }
 });
 ////////////////////////////////////////////////
@@ -210,49 +202,50 @@ function checkAndStart() {
 
 /////////////////////////////////////////////////////////
 // Peer Connection management...
-function createPeerConnection(userId) {
+function createPeerConnection() {
   try {
-    const pc = new RTCPeerConnection(pc_config, pc_constraints);
+    pc = new RTCPeerConnection(pc_config, pc_constraints);
 
-    console.log("Adding tracks from localStream to RTCPeerConnection for user:", userId);
-    if (localStream) {
-      localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream);
-      });
-    }
+    console.log("Calling pc.addStream(localStream)! Initiator: " + isInitiator);
+    pc.addStream(localStream);
 
-    pc.onicecandidate = (event) => handleIceCandidate(event, userId);
-    pc.ontrack = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
-
-    if (isInitiator) {
-      try {
-        const sendChannel = pc.createDataChannel("sendDataChannel", { reliable: true });
-        sendChannel.onopen = handleSendChannelStateChange;
-        sendChannel.onmessage = handleMessage;
-        sendChannel.onclose = handleSendChannelStateChange;
-      } catch (e) {
-        console.error('Failed to create data channel:', e);
-      }
-    } else {
-      pc.ondatachannel = gotReceiveChannel;
-    }
-
-    peerConnections[userId] = pc; // Almacena la conexión en el mapa
-    return pc;
+    pc.onicecandidate = handleIceCandidate;
+    console.log('Created RTCPeerConnnection with:\n' +
+      '  config: \'' + JSON.stringify(pc_config) + '\';\n' +
+      '  constraints: \'' + JSON.stringify(pc_constraints) + '\'.');
   } catch (e) {
-    console.error('Failed to create PeerConnection, exception:', e);
-    alert('Cannot create RTCPeerConnection object. Error: ' + e.message);
-    return null;
+    console.log('Failed to create PeerConnection, exception: ' + e.message);
+    alert('Cannot create RTCPeerConnection object.');
+      return;
+  }
+
+  pc.ontrack = handleRemoteStreamAdded;
+  pc.onremovestream = handleRemoteStreamRemoved;
+
+  if (isInitiator) {
+    try {
+      // Create a reliable data channel
+      sendChannel = pc.createDataChannel("sendDataChannel",
+        {reliable: true});
+      trace('Created send data channel');
+    } catch (e) {
+      alert('Failed to create data channel. ');
+      trace('createDataChannel() failed with exception: ' + e.message);
+    }
+    sendChannel.onopen = handleSendChannelStateChange;
+    sendChannel.onmessage = handleMessage;
+    sendChannel.onclose = handleSendChannelStateChange;
+  } else { // Joiner
+    pc.ondatachannel = gotReceiveChannel;
   }
 }
 
 // Data channel management
 function sendData() {
   var data = sendTextarea.value;
-  receiveTextarea.value += 'You: ' + sendTextarea.value + '\n';
-  sendTextarea.value = '';
-  receiveTextarea.scrollTop = receiveTextarea.scrollHeight;
+  receiveTextarea.value+='You: '+ data + '\n';
+  sendTextarea.value='';
+  receiveTextarea.scrollTop=receiveTextarea.scrollHeight;
   if(isInitiator) sendChannel.send(data);
   else receiveChannel.send(data);
   trace('Sent data: ' + data);
@@ -270,25 +263,20 @@ function gotReceiveChannel(event) {
 
 function handleMessage(event) {
   trace('Received message: ' + event.data);
-  receiveTextarea.value +='Remote: ' + event.data + '\n';
-  receiveTextarea.scrollTop = receiveTextarea.scrollHeight;
+  receiveTextarea.value +='Remote: '+ event.data + '\n';
+  receiveTextarea.scrollTop=receiveTextarea.scrollHeight;
 }
 
 function handleSendChannelStateChange() {
   var readyState = sendChannel.readyState;
-  console.log('Send channel state is: ' + readyState);
-  if (readyState === "open") {
-    console.log('Enabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
+  trace('Send channel state is: ' + readyState);
+  // If channel ready, enable user's input
+  if (readyState == "open") {
     dataChannelSend.disabled = false;
     dataChannelSend.focus();
-    dataChannelSend.placeholder = "Type your message here...";
+    dataChannelSend.placeholder = "";
     sendButton.disabled = false;
   } else {
-    console.log('Disabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
     dataChannelSend.disabled = true;
     sendButton.disabled = true;
   }
@@ -296,88 +284,55 @@ function handleSendChannelStateChange() {
 
 function handleReceiveChannelStateChange() {
   var readyState = receiveChannel.readyState;
-  console.log('Receive channel state is: ' + readyState);
-  if (readyState === "open") {
-    console.log('Enabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
-    dataChannelSend.disabled = false;
-    dataChannelSend.focus();
-    dataChannelSend.placeholder = "Type your message here...";
-    sendButton.disabled = false;
-  } else {
-    console.log('Disabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
-    dataChannelSend.disabled = true;
-    sendButton.disabled = true;
-  }
-}
-
-function handleReceiveChannelStateChange() {
-  var readyState = receiveChannel.readyState;
-  console.log('Receive channel state is: ' + readyState);
-  if (readyState === "open") {
-    console.log('Enabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
-    dataChannelSend.disabled = false;
-    dataChannelSend.focus();
-    dataChannelSend.placeholder = "Type your message here...";
-    sendButton.disabled = false;
-  } else {
-    console.log('Disabling dataChannelSend');
-    const dataChannelSend = document.getElementById('dataChannelSend');
-    const sendButton = document.getElementById('sendButton');
-    dataChannelSend.disabled = true;
-    sendButton.disabled = true;
-  }
+  trace('Receive channel state is: ' + readyState);
+  // If channel ready, enable user's input
+  if (readyState == "open") {
+	    dataChannelSend.disabled = false;
+	    dataChannelSend.focus();
+	    dataChannelSend.placeholder = "";
+	    sendButton.disabled = false;
+	  } else {
+	    dataChannelSend.disabled = true;
+	    sendButton.disabled = true;
+	  }
 }
 
 // ICE candidates management
-function handleIceCandidate(event, userId) {
-  console.log('handleIceCandidate event:', event);
+function handleIceCandidate(event) {
+  console.log('handleIceCandidate event: ', event);
   if (event.candidate) {
     sendMessage({
-      userId: userId,
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    });
+      candidate: event.candidate.candidate});
   } else {
     console.log('End of candidates.');
   }
 }
 
 // Create Offer
-function doCall(userId) {
-  console.log('Creating Offer for user:', userId);
-  peerConnections[userId].createOffer().then((offer) => {
-    setLocalAndSendMessage(offer, userId);
-  }).catch(onSignalingError);
+function doCall() {
+  console.log('Creating Offer...');
+  pc.createOffer(setLocalAndSendMessage, onSignalingError, sdpConstraints);
 }
+
 // Signalling error handler
 function onSignalingError(error) {
 	console.log('Failed to create signaling message : ' + error.name);
 }
 
 // Create Answer
-function doAnswer(userId) {
-  console.log('Sending answer to user:', userId);
-  peerConnections[userId].createAnswer().then((answer) => {
-    setLocalAndSendMessage(answer, userId);
-  }).catch(onSignalingError);
+function doAnswer() {
+  console.log('Sending answer to peer.');
+  pc.createAnswer(setLocalAndSendMessage, onSignalingError, sdpConstraints);
 }
 
 // Success handler for both createOffer()
 // and createAnswer()
-function setLocalAndSendMessage(sessionDescription, userId) {
-  peerConnections[userId].setLocalDescription(sessionDescription);
-  sendMessage({
-    userId: userId, // Incluye el ID del usuario
-    ...sessionDescription
-  });
+function setLocalAndSendMessage(sessionDescription) {
+  pc.setLocalDescription(sessionDescription);
+  sendMessage(sessionDescription);
 }
 
 /////////////////////////////////////////////////////////
@@ -385,32 +340,10 @@ function setLocalAndSendMessage(sessionDescription, userId) {
 
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
-
-  if (event.streams && event.streams[0]) {
-    const remoteStreamId = event.streams[0].id;
-    const remoteVideosContainer = document.getElementById('remoteVideosContainer');
-
-    // Verificar si ya existe un video para este flujo remoto
-    const existingVideo = document.querySelector(`video[data-stream-id="${remoteStreamId}"]`);
-    if (existingVideo) {
-      console.log('Remote stream already added, skipping.');
-      return;
-    }
-
-    // Crear un nuevo elemento <video> para este flujo remoto
-    const remoteVideoElement = document.createElement('video');
-    remoteVideoElement.autoplay = true;
-    remoteVideoElement.playsInline = true;
-    remoteVideoElement.srcObject = event.streams[0];
-    remoteVideoElement.setAttribute('data-stream-id', remoteStreamId);
-
-    // Agregar el nuevo elemento <video> al contenedor
-    remoteVideosContainer.appendChild(remoteVideoElement);
-
-    console.log('Remote stream attached to new video element.');
-  } else {
-    console.error('No remote stream found in event.');
-  }
+  //attachMediaStream(remoteVideo, event.streams[0]);
+  remoteVideo.srcObject = event.streams[0];
+  console.log('Remote stream attached!!.');
+  remoteStream = event.stream;
 }
 
 function handleRemoteStreamRemoved(event) {
