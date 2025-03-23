@@ -213,6 +213,7 @@ function createPeerConnection() {
      if (localStream) {
        localStream.getTracks().forEach(track => {
          pc.addTrack(track, localStream);
+         console.log('Local stream tracks:', localStream.getTracks());
        });
      }
     pc.onicecandidate = handleIceCandidate;
@@ -343,10 +344,24 @@ function setLocalAndSendMessage(sessionDescription) {
 /////////////////////////////////////////////////////////
 // Remote stream handlers...
 
+// Cambiar la referencia de remoteVideo a remoteVideosContainer
+var remoteVideosContainer = document.querySelector('#remoteVideosContainer');
+
+// Actualizar la función handleRemoteStreamAdded para agregar videos dinámicamente
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
   if (event.streams && event.streams[0]) {
+    // Crear un nuevo elemento <video> para el flujo remoto
+    const remoteVideo = document.createElement('video');
+    remoteVideo.autoplay = true;
     remoteVideo.srcObject = event.streams[0];
+    remoteVideo.style.width = '500px'; // Ajustar el tamaño del video
+    remoteVideo.style.borderRadius = '8px'; // Estilo adicional
+    remoteVideo.style.objectFit = 'cover'; // Asegurar proporción
+
+    // Agregar el video al contenedor
+    remoteVideosContainer.appendChild(remoteVideo);
+
     remoteStream = event.streams[0];
     console.log('Remote stream attached.');
   } else {
