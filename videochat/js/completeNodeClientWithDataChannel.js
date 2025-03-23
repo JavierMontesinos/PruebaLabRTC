@@ -120,28 +120,22 @@ function handleUserMediaError(error){
 
 // Handle 'created' message coming back from server:
 // this peer is the initiator
-socket.on('created', function (room){
+socket.on('created', (room) => {
   console.log(`Created room ${room}`);
   isInitiator = true;
-
-  // Call getUserMedia()
-  navigator.mediaDevices.getUserMedia(constraints).then(handleUserMedia).catch(handleUserMediaError);
-  console.log('Getting user media with constraints', constraints);
-
-  checkAndStart();
 });
 
 // Handle 'full' message coming back from server:
 // this peer arrived too late :-(
-socket.on('full', function (room){
-  console.log('Room ' + room + ' is full');
+socket.on('full', (room) => {
+  console.log(`Room ${room} is full`);
+  alert('The room is full. Please try another room.');
 });
 
 // Handle 'join' message coming back from server:
 // another peer is joining the channel
-socket.on('join', function (room){
-  console.log('Another peer made a request to join room ' + room);
-  console.log('This peer is the initiator of room ' + room + '!');
+socket.on('join', (room) => {
+  console.log(`Another peer joined room ${room}`);
   isChannelReady = true;
 });
 
@@ -149,11 +143,6 @@ socket.on('join', function (room){
 // this is the second peer joining the channel
 socket.on('joined', (room) => {
   console.log(`Joined room ${room}`);
-  isChannelReady = true;
-});
-
-socket.on('join', (room) => {
-  console.log(`Another peer joined room ${room}`);
   isChannelReady = true;
 });
 

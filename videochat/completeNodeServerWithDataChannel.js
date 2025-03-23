@@ -65,11 +65,11 @@ io.on('connection', (socket) => {
     console.log('A user disconnected:', socket.id);
   });
 
-  socket.on('message', function (message) { // Handle 'message' messages
-    console.log('S --> got message: ', message);
-    // channel-only broadcast...
-    socket.broadcast.to(message.channel).emit('message', message);
-  });
+  // socket.on('message', function (message) { // Handle 'message' messages
+  //   console.log('S --> got message: ', message);
+  //   // channel-only broadcast...
+  //   socket.broadcast.to(message.channel).emit('message', message);
+  // });
 
   function log(){
     var array = [">>> "];
