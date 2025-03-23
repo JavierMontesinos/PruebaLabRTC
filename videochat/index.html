@@ -155,19 +155,17 @@
 			</td>
 		</tr>
 		<tr>
-			<td align="center">
-				<textarea rows="4" cols="60" id="dataChannelSend" disabled
-			placeholder="This will be enabled once the data channel is up..."></textarea>
-			</td>
-			<td align="center">
-				<textarea rows="4" cols="60" id="dataChannelReceive" disabled></textarea>
+			<td colspan="2" align="center">
+				<!-- Cuadro de texto para mostrar el historial del chat -->
+				<textarea rows="10" cols="80" id="chatHistory" disabled placeholder="Chat history will appear here..."></textarea>
 			</td>
 		</tr>
 		<tr>
-			<td align="center">
+			<td colspan="2" align="center">
+				<!-- Cuadro de entrada para escribir mensajes -->
+				<input type="text" id="chatInput" placeholder="Type your message here..." style="width: 70%; padding: 10px; font-size: 14px;" />
 				<button id="sendButton" disabled>Send</button>
 			</td>
-			<td></td>
 		</tr>
 	</table>
 </div>

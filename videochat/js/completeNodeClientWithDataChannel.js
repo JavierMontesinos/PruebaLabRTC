@@ -249,14 +249,25 @@ function createPeerConnection() {
 }
 
 // Data channel management
+// Referencias a los elementos del chat
+var chatHistory = document.getElementById("chatHistory");
+var chatInput = document.getElementById("chatInput");
+
+// Actualizar la función sendData para usar el nuevo cuadro de entrada
 function sendData() {
-  var data = sendTextarea.value;
-  receiveTextarea.value+='You: '+ data + '\n';
-  sendTextarea.value='';
-  receiveTextarea.scrollTop=receiveTextarea.scrollHeight;
-  if(isInitiator) sendChannel.send(data);
+  var data = chatInput.value;
+  if (data.trim() === "") return; // No enviar mensajes vacíos
+
+  // Agregar el mensaje enviado al historial del chat
+  chatHistory.value += "You: " + data + "\n";
+  chatInput.value = ""; // Limpiar el cuadro de entrada
+  chatHistory.scrollTop = chatHistory.scrollHeight; // Desplazar hacia abajo
+
+  // Enviar el mensaje a través del canal de datos
+  if (isInitiator) sendChannel.send(data);
   else receiveChannel.send(data);
-  trace('Sent data: ' + data);
+
+  trace("Sent data: " + data);
 }
 
 // Handlers...
@@ -270,39 +281,42 @@ function gotReceiveChannel(event) {
 }
 
 function handleMessage(event) {
-  trace('Received message: ' + event.data);
-  receiveTextarea.value +='Remote: '+ event.data + '\n';
-  receiveTextarea.scrollTop=receiveTextarea.scrollHeight;
+  trace("Received message: " + event.data);
+
+  // Agregar el mensaje recibido al historial del chat
+  chatHistory.value += "Remote: " + event.data + "\n";
+  chatHistory.scrollTop = chatHistory.scrollHeight; // Desplazar hacia abajo
 }
 
 function handleSendChannelStateChange() {
   var readyState = sendChannel.readyState;
-  trace('Send channel state is: ' + readyState);
-  // If channel ready, enable user's input
-  if (readyState == "open") {
-    dataChannelSend.disabled = false;
-    dataChannelSend.focus();
-    dataChannelSend.placeholder = "";
+  trace("Send channel state is: " + readyState);
+
+  // Habilitar o deshabilitar el cuadro de entrada y el botón de envío
+  if (readyState === "open") {
+    chatInput.disabled = false;
+    chatInput.focus();
     sendButton.disabled = false;
   } else {
-    dataChannelSend.disabled = true;
+    chatInput.disabled = true;
     sendButton.disabled = true;
   }
 }
 
+
 function handleReceiveChannelStateChange() {
   var readyState = receiveChannel.readyState;
-  trace('Receive channel state is: ' + readyState);
-  // If channel ready, enable user's input
-  if (readyState == "open") {
-	    dataChannelSend.disabled = false;
-	    dataChannelSend.focus();
-	    dataChannelSend.placeholder = "";
-	    sendButton.disabled = false;
-	  } else {
-	    dataChannelSend.disabled = true;
-	    sendButton.disabled = true;
-	  }
+  trace("Receive channel state is: " + readyState);
+
+  // Habilitar o deshabilitar el cuadro de entrada y el botón de envío
+  if (readyState === "open") {
+    chatInput.disabled = false;
+    chatInput.focus();
+    sendButton.disabled = false;
+  } else {
+    chatInput.disabled = true;
+    sendButton.disabled = true;
+  }
 }
 
 // ICE candidates management
